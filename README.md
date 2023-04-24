@@ -87,7 +87,6 @@ int main(void)
     }
     Delay_Ms(2);
 
-
     CS1237_Start();
     while(1)
     {
@@ -98,7 +97,8 @@ int main(void)
     }
 }
 ```
-定时器中断内容：
+
+定时中断内容：
 ``` c
 void TIM2_IRQHandler(void)
 {
