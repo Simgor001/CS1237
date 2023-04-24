@@ -113,3 +113,4 @@ void TIM2_IRQHandler(void)
 # 未实现功能
 - 温度计算功能
 - 多路CS1237功能
+- 滤波算法
