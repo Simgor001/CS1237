@@ -1,115 +1,115 @@
 /*
  * CS1237.c
  *
- *  Created on: 2023Äê3ÔÂ12ÈÕ
+ *  Created on: 2023å¹´3æœˆ12æ—¥
  *      Author: Simgor001
  */
 
 #include <CS1237/CS1237.h>
 
-//»ù×¼µçÑ¹
+//åŸºå‡†ç”µå‹
 static float ref = 2.5;
-//ÔöÒæ
+//å¢ç›Š
 static int32_t Gain = 1;
 
-//½¨Á¢Ê±¼ä
+//å»ºç«‹æ—¶é—´
 static uint32_t buile_ti = 0;
 
-//Êı¾İ²É¼¯Ê¹ÄÜ(0²»²É¼¯£¬1Õı³£²É¼¯)
+//æ•°æ®é‡‡é›†ä½¿èƒ½(0ä¸é‡‡é›†ï¼Œ1æ­£å¸¸é‡‡é›†)
 static char towork = 0;
 
-//²É¼¯µ½µÄÔ­Ê¼Êı¾İ
+//é‡‡é›†åˆ°çš„åŸå§‹æ•°æ®
 static int32_t raw_data = 0;
 
 
 /**
- *@brief ÑÓ³Ù
- *@param ms ºÁÃë
+ *@brief å»¶è¿Ÿ
+ *@param ms æ¯«ç§’
  **/
 extern void _CS1237_ms(uint32_t ms);
 
 /**
- * @brief ÑÓ³ÙÒ»¸öÂö³å
+ * @brief å»¶è¿Ÿä¸€ä¸ªè„‰å†²
  */
 extern void _CS1237_Delay();
 
 /**
- *@brief ³õÊ¼»¯GPIO£¨ĞèÒªÒÆÖ²£©
+ *@brief åˆå§‹åŒ–GPIOï¼ˆéœ€è¦ç§»æ¤ï¼‰
  **/
 extern void _CS1237_GPIO_Init();
 
 /**
- *@brief ÉèÖÃÊı¾İÒı½Å·½ÏòÎªÊäÈë£¨ĞèÒªÒÆÖ²£©
+ *@brief è®¾ç½®æ•°æ®å¼•è„šæ–¹å‘ä¸ºè¾“å…¥ï¼ˆéœ€è¦ç§»æ¤ï¼‰
  **/
 extern void _CS1237_Input();
 
 /**
- *@brief ÉèÖÃÊı¾İÒı½Å·½ÏòÎªÊä³ö£¨ĞèÒªÒÆÖ²£©
+ *@brief è®¾ç½®æ•°æ®å¼•è„šæ–¹å‘ä¸ºè¾“å‡ºï¼ˆéœ€è¦ç§»æ¤ï¼‰
  **/
 extern void _CS1237_Output();
 
 /**
- *@brief Ê±ÖÓÊä³öµÍµçÆ½£¨ĞèÒªÒÆÖ²£©
+ *@brief æ—¶é’Ÿè¾“å‡ºä½ç”µå¹³ï¼ˆéœ€è¦ç§»æ¤ï¼‰
  **/
 extern void _CS1237_CLK_ResetBits();
 
 /**
- *@brief Ê±ÖÓÊä³ö¸ßµçÆ½£¨ĞèÒªÒÆÖ²£©
+ *@brief æ—¶é’Ÿè¾“å‡ºé«˜ç”µå¹³ï¼ˆéœ€è¦ç§»æ¤ï¼‰
  **/
 extern void _CS1237_CLK_SetBits();
 
 /**
- *@brief Êı¾İÊä³öµÍµçÆ½£¨ĞèÒªÒÆÖ²£©
+ *@brief æ•°æ®è¾“å‡ºä½ç”µå¹³ï¼ˆéœ€è¦ç§»æ¤ï¼‰
  **/
 extern void _CS1237_SDA_ResetBits();
 
 /**
- *@brief Êı¾İÊä³ö¸ßµçÆ½£¨ĞèÒªÒÆÖ²£©
+ *@brief æ•°æ®è¾“å‡ºé«˜ç”µå¹³ï¼ˆéœ€è¦ç§»æ¤ï¼‰
  **/
 extern void _CS1237_SDA_SetBits();
 
 /**
- *@brief ¶ÁÈ¡Êı¾İÏßµÄÖµ£¨ĞèÒªÒÆÖ²£©
+ *@brief è¯»å–æ•°æ®çº¿çš„å€¼ï¼ˆéœ€è¦ç§»æ¤ï¼‰
  **/
 extern uint8_t _CS1237_SDA_ReadBits();
 
 /*==================================================================
- *     API²ã
+ *     APIå±‚
  * ===============================================================*/
 
 static inline void _CS1237_PowerUp()
 {
-    //´ÓµôµçÄ£Ê½ÖĞ»½ĞÑ
+    //ä»æ‰ç”µæ¨¡å¼ä¸­å”¤é†’
     _CS1237_CLK_ResetBits();
     _CS1237_ms(2);
 }
 
 static inline void _CS1237_PowerDown()
 {
-    //½øÈëµôµçÄ£Ê½
+    //è¿›å…¥æ‰ç”µæ¨¡å¼
     _CS1237_CLK_SetBits();
 }
 
 /**
- * @brief »½ĞÑĞ¾Æ¬£¬¿ªÊ¼²É¼¯Êı¾İ
+ * @brief å”¤é†’èŠ¯ç‰‡ï¼Œå¼€å§‹é‡‡é›†æ•°æ®
  */
 void CS1237_Start()
 {
     _CS1237_PowerUp();
 
-    //ÉèÖÃÒı½ÅÎªÊäÈëÄ£Ê½
+    //è®¾ç½®å¼•è„šä¸ºè¾“å…¥æ¨¡å¼
     _CS1237_Input();
 
-    //Ê¹ÄÜË¢ĞÂ
+    //ä½¿èƒ½åˆ·æ–°
     towork = 1;
 }
 
 /**
- * @brief ½áÊø²É¼¯Êı¾İ£¬ĞİÃßĞ¾Æ¬
+ * @brief ç»“æŸé‡‡é›†æ•°æ®ï¼Œä¼‘çœ èŠ¯ç‰‡
  */
 void CS1237_Finish()
 {
-    //¹Ø±ÕË¢ĞÂ
+    //å…³é—­åˆ·æ–°
     towork = 0;
 
     _CS1237_PowerDown();
@@ -117,7 +117,7 @@ void CS1237_Finish()
 
 
 /**
- * @brief ·¢ËÍÒ»¸öÂö³å
+ * @brief å‘é€ä¸€ä¸ªè„‰å†²
  */
 static inline void _CS1237_Clock()
 {
@@ -128,9 +128,9 @@ static inline void _CS1237_Clock()
 }
 
 /**
- * @brief ¶Á²Ù×÷
+ * @brief è¯»æ“ä½œ
  *
- * @param len   ĞèÒª¶ÁµÄbitÊıÁ¿
+ * @param len   éœ€è¦è¯»çš„bitæ•°é‡
  */
 static uint32_t _CS1237_Read(char len)
 {
@@ -138,13 +138,13 @@ static uint32_t _CS1237_Read(char len)
     char i;
     for (i = 0; i < len; ++i)
     {
-        _CS1237_CLK_SetBits();      //ÉÏÉıÑØ
-        _CS1237_Delay();             //µÈ´ıÖÁÉÙ500ns£¬ÒòÎªSCLKÉÏÉıÑØµ½ĞÂÊı¾İÎ»ÓĞĞ§(´«ÊäÑÓ³Ù)ÖÁÉÙ455ns
+        _CS1237_CLK_SetBits();      //ä¸Šå‡æ²¿
+        _CS1237_Delay();             //ç­‰å¾…è‡³å°‘500nsï¼Œå› ä¸ºSCLKä¸Šå‡æ²¿åˆ°æ–°æ•°æ®ä½æœ‰æ•ˆ(ä¼ è¾“å»¶è¿Ÿ)è‡³å°‘455ns
         data <<= 1;
-        if(_CS1237_SDA_ReadBits())  //¶ÁÈ¡Êı¾İ
+        if(_CS1237_SDA_ReadBits())  //è¯»å–æ•°æ®
             ++data;
 
-        _CS1237_CLK_ResetBits();    //ÏÂ½µÑØ
+        _CS1237_CLK_ResetBits();    //ä¸‹é™æ²¿
         _CS1237_Delay();
     }
     return data;
@@ -152,68 +152,68 @@ static uint32_t _CS1237_Read(char len)
 
 
 /**
- * @brief Ğ´²Ù×÷
+ * @brief å†™æ“ä½œ
  *
- * @param data   ĞèÒªĞ´ÈëµÄÊı¾İ
+ * @param data   éœ€è¦å†™å…¥çš„æ•°æ®
  */
 static void CS1237_Send(uint8_t data)
 {
     char i;
     for(i = 0; i < 8; ++i)
     {
-        _CS1237_CLK_SetBits();      //ÉÏÉıÑØ
-        _CS1237_Delay();            //µÈ´ıÖÁÉÙ500ns£¬ÒòÎªSCLKÉÏÉıÑØµ½ĞÂÊı¾İÎ»ÓĞĞ§(´«ÊäÑÓ³Ù)ÖÁÉÙ455ns
+        _CS1237_CLK_SetBits();      //ä¸Šå‡æ²¿
+        _CS1237_Delay();            //ç­‰å¾…è‡³å°‘500nsï¼Œå› ä¸ºSCLKä¸Šå‡æ²¿åˆ°æ–°æ•°æ®ä½æœ‰æ•ˆ(ä¼ è¾“å»¶è¿Ÿ)è‡³å°‘455ns
 
         if(data & (1 << (7 - i)))
             _CS1237_SDA_SetBits();
         else
             _CS1237_SDA_ResetBits();
 
-       _CS1237_CLK_ResetBits();    //ÏÂ½µÑØ
+       _CS1237_CLK_ResetBits();    //ä¸‹é™æ²¿
        _CS1237_Delay();
     }
 }
 
 
 /**
- * @brief Ë¢ĞÂ£¨1msµ÷ÓÃÒ»´Î£©
+ * @brief åˆ·æ–°ï¼ˆ1msè°ƒç”¨ä¸€æ¬¡ï¼‰
  *
- * -ÓÃÓÚÆ¥Åä½¨Á¢Ê±¼ä£¬²É¼¯Êı¾İ±£´æµ½»º³åÇø
+ * -ç”¨äºåŒ¹é…å»ºç«‹æ—¶é—´ï¼Œé‡‡é›†æ•°æ®ä¿å­˜åˆ°ç¼“å†²åŒº
  */
 void CS1237_Ref()
 {
-    //»ù×¼Ê±¼ä
+    //åŸºå‡†æ—¶é—´
     static uint32_t ti = 0;
 
-    //ÊÇ·ñĞèÒª²É¼¯Êı¾İ£¬²»ĞèÒª¾ÍÌø¹ı
+    //æ˜¯å¦éœ€è¦é‡‡é›†æ•°æ®ï¼Œä¸éœ€è¦å°±è·³è¿‡
     if(towork == 0)
         return;
 
     ++ti;
 
-    //µÈ´ıËùĞèµÄ½¨Á¢Ê±¼ä
+    //ç­‰å¾…æ‰€éœ€çš„å»ºç«‹æ—¶é—´
     if(ti < buile_ti)
         return;
     ti = 0;
 
-    //Ö»ÓĞÎªµÍµçÆ½Ê±£¬²Å±íÊ¾Êı¾İ×¼±¸¾ÍĞ÷
+    //åªæœ‰ä¸ºä½ç”µå¹³æ—¶ï¼Œæ‰è¡¨ç¤ºæ•°æ®å‡†å¤‡å°±ç»ª
     if(_CS1237_SDA_ReadBits())
         return;
 
-    //¶ÁÈ¡24Î»Êı¾İ
+    //è¯»å–24ä½æ•°æ®
     raw_data = _CS1237_Read(24);
-    _CS1237_Clock();    //µÚ25Î»
-    _CS1237_Clock();    //µÚ26Î»
-    _CS1237_Clock();    //µÚ27Î»
+    _CS1237_Clock();    //ç¬¬25ä½
+    _CS1237_Clock();    //ç¬¬26ä½
+    _CS1237_Clock();    //ç¬¬27ä½
 }
 
 
 /**
- * @brief ³õÊ¼»¯
+ * @brief åˆå§‹åŒ–
  *
- * @param CS1237_InitStruct ÅäÖÃ²ÎÊıÖ¸Õë
+ * @param CS1237_InitStruct é…ç½®å‚æ•°æŒ‡é’ˆ
  *
- * @return -³¬Ê±·µ»Ø0£¬³É¹¦·µ»Ø1
+ * @return -è¶…æ—¶è¿”å›0ï¼ŒæˆåŠŸè¿”å›1
  */
 char CS1237_Init(CS1237_InitTypedef* CS1237_InitStruct)
 {
@@ -230,16 +230,16 @@ char CS1237_Init(CS1237_InitTypedef* CS1237_InitStruct)
 
     _CS1237_PowerUp();
 
-    _CS1237_Read(26);       //Ç°Ãæ26¸öÊ±ÖÓÅ×Æú
+    _CS1237_Read(26);       //å‰é¢26ä¸ªæ—¶é’ŸæŠ›å¼ƒ
 
     _CS1237_Output();
-    _CS1237_SDA_SetBits();  //Ç¿ÖÆÀ­¸ß
+    _CS1237_SDA_SetBits();  //å¼ºåˆ¶æ‹‰é«˜
     _CS1237_Clock();        //27
     _CS1237_Clock();        //28
     _CS1237_Clock();        //29
 
 
-    CS1237_Send((CS1237_Config_Write << 1) + 1);  //30~37(µÚ37Î»ÓÃÓÚÇĞ»»·½Ïò)
+    CS1237_Send((CS1237_Config_Write << 1) + 1);  //30~37(ç¬¬37ä½ç”¨äºåˆ‡æ¢æ–¹å‘)
 
     CS1237_Send(CS1237_InitStruct->CS1237_REFO|
                 CS1237_InitStruct->CS1237_Speed|
@@ -249,13 +249,7 @@ char CS1237_Init(CS1237_InitTypedef* CS1237_InitStruct)
     _CS1237_Input();
     _CS1237_Clock();
 
-    //ÉèÖÃ»ù×¼µçÑ¹
-    if(CS1237_InitStruct->CS1237_REFO == CS1237_REFO_DISABLE)
-        ref = 2.5;
-    else
-        ref = 3.3;
-
-    //ÉèÖÃ·Å´ó±¶Êı
+    //è®¾ç½®æ”¾å¤§å€æ•°
     if(CS1237_InitStruct->CS1237_PGA == CS1237_PGA_1)
         Gain = 1;
     else if(CS1237_InitStruct->CS1237_PGA == CS1237_PGA_2)
@@ -265,7 +259,7 @@ char CS1237_Init(CS1237_InitTypedef* CS1237_InitStruct)
     else if(CS1237_InitStruct->CS1237_PGA == CS1237_PGA_128)
         Gain = 128;
 
-    //°´ÕÕËÙ¶ÈÉèÖÃ½¨Á¢Ê±¼ä
+    //æŒ‰ç…§é€Ÿåº¦è®¾ç½®å»ºç«‹æ—¶é—´
     if(CS1237_InitStruct->CS1237_Speed == CS1237_Speed_10Hz)
         buile_ti = 300;
     else if(CS1237_InitStruct->CS1237_Speed == CS1237_Speed_40Hz)
@@ -280,23 +274,23 @@ char CS1237_Init(CS1237_InitTypedef* CS1237_InitStruct)
 
 
 /**
- * @brief Òì²½»ñÈ¡µçÑ¹
+ * @brief å¼‚æ­¥è·å–ç”µå‹
  */
 double CS1237_GetData()
 {
     if(towork == 0)
         return 0;
 
-    //×ª»»Ö®ºóµÄÊı¾İ
+    //è½¬æ¢ä¹‹åçš„æ•°æ®
     int32_t data = 0;
 
-    //¼ÆËãºóµÄµçÑ¹
+    //è®¡ç®—åçš„ç”µå‹
     double u = 0;
 
-    //ÉèÖÃ·ûºÅÎ»
+    //è®¾ç½®ç¬¦å·ä½
     if(raw_data & (1 << 23))
     {
-        //¸ºÊı
+        //è´Ÿæ•°
         data = ~raw_data;
         data = -((data + 1) & 0x00FFFFFF);
     }
